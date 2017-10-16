@@ -1,8 +1,10 @@
 package com.chriszht.editordemo;
 
+import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ContextMenu;
@@ -18,23 +20,21 @@ import org.wordpress.android.editor.EditorMediaUploadListener;
 import org.wordpress.android.editor.ImageSettingsDialogFragment;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
-import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.MediaFile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EditorExampleActivity extends AppCompatActivity implements EditorFragmentListener,
-        EditorDragAndDropListener {
-    public static final String EDITOR_PARAM = "EDITOR_PARAM";
+public class EditorExampleActivity extends AppCompatActivity
+        implements EditorFragmentListener, EditorDragAndDropListener {
+
+
     public static final String TITLE_PARAM = "TITLE_PARAM";
     public static final String CONTENT_PARAM = "CONTENT_PARAM";
     public static final String DRAFT_PARAM = "DRAFT_PARAM";
     public static final String TITLE_PLACEHOLDER_PARAM = "TITLE_PLACEHOLDER_PARAM";
     public static final String CONTENT_PLACEHOLDER_PARAM = "CONTENT_PLACEHOLDER_PARAM";
-    public static final int USE_NEW_EDITOR = 1;
-    public static final int USE_LEGACY_EDITOR = 2;
 
     public static final int ADD_MEDIA_ACTIVITY_REQUEST_CODE = 1111;
     public static final int ADD_MEDIA_FAIL_ACTIVITY_REQUEST_CODE = 1112;
@@ -55,13 +55,7 @@ public class EditorExampleActivity extends AppCompatActivity implements EditorFr
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getIntent().getIntExtra(EDITOR_PARAM, USE_NEW_EDITOR) == USE_NEW_EDITOR) {
-            ToastUtils.showToast(this, R.string.starting_new_editor);
-            setContentView(R.layout.activity_new_editor);
-        } else {
-            ToastUtils.showToast(this, R.string.starting_legacy_editor);
-            setContentView(R.layout.activity_legacy_editor);
-        }
+        setContentView(R.layout.activity_new_editor);
 
         mFailedUploads = new HashMap<>();
     }
@@ -76,7 +70,7 @@ public class EditorExampleActivity extends AppCompatActivity implements EditorFr
 
     @Override
     public void onBackPressed() {
-        Fragment fragment =  getFragmentManager()
+        Fragment fragment = getFragmentManager()
                 .findFragmentByTag(ImageSettingsDialogFragment.IMAGE_SETTINGS_DIALOG_TAG);
         if (fragment != null && fragment.isVisible()) {
             ((ImageSettingsDialogFragment) fragment).dismissFragment();
@@ -354,6 +348,13 @@ public class EditorExampleActivity extends AppCompatActivity implements EditorFr
 
     @Override
     public void onRequestDragAndDropPermissions(DragEvent dragEvent) {
-        // TODO
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            requestTemporaryPermissions(dragEvent);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    private void requestTemporaryPermissions(DragEvent dragEvent) {
+        requestDragAndDropPermissions(dragEvent);
     }
 }
