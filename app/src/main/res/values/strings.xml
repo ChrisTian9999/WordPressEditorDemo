@@ -18,4 +18,42 @@
     <string name="select_video">Select a video</string>
     <string name="select_video_fail">Select a video (failure demo)</string>
     <string name="select_image_slow_network">Select an image (slow network demo)</string>
+
+    <string name="media_empty_list">No media</string>
+    <!-- CAB -->
+    <string name="cab_selected">%d selected</string>
+
+    <string name="photo_picker_title">Choose photo</string>
+    <string name="photo_picker_choose_photo">Choose photo from device</string>
+    <string name="photo_picker_choose_video">Choose video from device</string>
+    <string name="photo_picker_capture_photo">Take photo</string>
+    <string name="photo_picker_capture_video">Take video</string>
+    <string name="photo_picker_soft_ask_label">%s needs permissions to access your photos</string>
+    <string name="photo_picker_soft_ask_allow">Allow</string>
+    <string name="photo_picker_soft_ask_permissions_denied">%1$s was denied access to your photos. To fix this, edit your permissions and turn on %2$s.</string>
+    <string name="pick_video">Select video</string>
+    <string name="pick_photo">Select photo</string>
+
+    <string name="permission_location">Location</string>
+    <string name="permission_camera">Camera</string>
+    <string name="permission_storage">Storage</string>
+    <string name="permissions_denied_message">To change this, edit your permissions and make sure %s is enabled</string>
+    <string name="permissions_denied_title">It looks like you turned off permissions required for this feature</string>
+    <string name="button_edit_permissions">Edit permissions</string>
+
+    <string name="leave_off">Leave off</string>
+    <string name="turn_on">Turn on</string>
+    <string name="confirm">Confirm</string>
+    <string name="unknown">Unknown</string>
+    <string name="never">Never</string>
+    <string name="button_not_now">Not now</string>
+    <string name="capture_or_pick_photo">Capture or select photo</string>
+
+    <string name="account_two_step_auth_enabled">This account has two step authentication enabled. Visit your security settings on WordPress.com and generate an application-specific password.</string>
+
+    <string name="sdcard_message">A mounted SD card is required to upload media</string>
+    <string name="sdcard_title">SD Card Required</string>
+
+    <string name="image_optimization_promo_desc">Image optimisation shrinks images for quicker uploading.\n\nYou can change this any time in site settings.</string>
+    <string name="image_optimization_promo_title">Turn on image optimisation?</string>
 </resources>

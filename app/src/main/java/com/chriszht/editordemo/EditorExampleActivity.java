@@ -1,17 +1,31 @@
 package com.chriszht.editordemo;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.DragEvent;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 
+import com.chriszht.editordemo.photopicker.PhotoPickerFragment;
+import com.chriszht.editordemo.utils.AniUtils;
+import com.chriszht.editordemo.utils.WPMediaUtils;
+
+import org.wordpress.android.editor.AztecEditorFragment;
 import org.wordpress.android.editor.EditorFragmentAbstract;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorDragAndDropListener;
 import org.wordpress.android.editor.EditorFragmentAbstract.EditorFragmentListener;
@@ -20,14 +34,19 @@ import org.wordpress.android.editor.EditorMediaUploadListener;
 import org.wordpress.android.editor.ImageSettingsDialogFragment;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
+import org.wordpress.android.util.DisplayUtils;
+import org.wordpress.android.util.MediaUtils;
 import org.wordpress.android.util.helpers.MediaFile;
+import org.wordpress.passcodelock.AppLockManager;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class EditorExampleActivity extends AppCompatActivity
-        implements EditorFragmentListener, EditorDragAndDropListener {
+        implements EditorFragmentListener, EditorDragAndDropListener, PhotoPickerFragment.PhotoPickerListener {
 
 
     public static final String TITLE_PARAM = "TITLE_PARAM";
@@ -51,6 +70,15 @@ public class EditorExampleActivity extends AppCompatActivity
     private EditorFragmentAbstract mEditorFragment;
 
     private Map<String, String> mFailedUploads;
+
+
+    private static final String PHOTO_PICKER_TAG = "photo_picker";
+
+    private View mPhotoPickerContainer;
+    private PhotoPickerFragment mPhotoPickerFragment;
+    private int mPhotoPickerOrientation = Configuration.ORIENTATION_UNDEFINED;
+
+    private String mMediaCapturePath = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +105,23 @@ public class EditorExampleActivity extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // resize the photo picker if the user rotated the device
+        int orientation = newConfig.orientation;
+        if (orientation != mPhotoPickerOrientation) {
+            resizePhotoPicker();
+        }
+
+        // If we're showing the Async promo dialog, we need to notify it to take the new orientation into account
+//        PromoDialog fragment = (PromoDialog) getSupportFragmentManager().findFragmentByTag(ASYNC_PROMO_DIALOG_TAG);
+//        if (fragment != null) {
+//            fragment.redrawForOrientationChange();
+//        }
     }
 
     @Override
@@ -176,11 +221,22 @@ public class EditorExampleActivity extends AppCompatActivity
     @Override
     public void onSettingsClicked() {
         // TODO
+        Log.e("TAG", "onSettingsClicked");
     }
 
     @Override
     public void onAddMediaClicked() {
-        // TODO
+        if (isPhotoPickerShowing()) {
+            hidePhotoPicker();
+        } else {
+            showPhotoPicker();
+        }
+    }
+
+
+    private boolean isPhotoPickerShowing() {
+        return mPhotoPickerContainer != null
+                && mPhotoPickerContainer.getVisibility() == View.VISIBLE;
     }
 
     @Override
@@ -357,4 +413,203 @@ public class EditorExampleActivity extends AppCompatActivity
     private void requestTemporaryPermissions(DragEvent dragEvent) {
         requestDragAndDropPermissions(dragEvent);
     }
+
+
+    @Override
+    public void onPhotoPickerMediaChosen(@NonNull final List<Uri> uriList) {
+        hidePhotoPicker();
+
+        if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+            boolean hasSelectedPicture = false;
+            for (Uri uri : uriList) {
+                if (!MediaUtils.isVideo(uri.toString())) {
+                    hasSelectedPicture = true;
+                    break;
+                }
+            }
+            if (hasSelectedPicture) {
+                WPMediaUtils.advertiseImageOptimization(this,
+                        new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                            @Override
+                            public void done() {
+                                addMediaList(uriList, false);
+                            }
+                        });
+                return;
+            }
+        }
+
+        addMediaList(uriList, false);
+    }
+
+    @Override
+    public void onPhotoPickerIconClicked(@NonNull PhotoPickerFragment.PhotoPickerIcon icon) {
+        hidePhotoPicker();
+        switch (icon) {
+            case ANDROID_CAPTURE_PHOTO:
+                launchCamera();
+                break;
+            case ANDROID_CAPTURE_VIDEO:
+                launchVideoCamera();
+                break;
+            case ANDROID_CHOOSE_PHOTO:
+                launchPictureLibrary();
+                break;
+            case ANDROID_CHOOSE_VIDEO:
+                launchVideoLibrary();
+                break;
+//            case WP_MEDIA:
+//                ActivityLauncher.viewMediaPickerForResult(this, mSite);
+//                break;
+        }
+    }
+
+    private void addMediaList(@NonNull List<Uri> uriList, boolean isNew) {
+        // TODO: 2017/10/16
+        // fetch any shared media first - must be done on the main thread
+//        List<Uri> fetchedUriList = fetchMediaList(uriList);
+//        mAddMediaListThread = new AddMediaListThread(fetchedUriList, isNew);
+//        mAddMediaListThread.start();
+    }
+
+
+    private void launchCamera() {
+        WPMediaUtils.launchCamera(this, BuildConfig.APPLICATION_ID,
+                new WPMediaUtils.LaunchCameraCallback() {
+                    @Override
+                    public void onMediaCapturePathReady(String mediaCapturePath) {
+                        mMediaCapturePath = mediaCapturePath;
+                        AppLockManager.getInstance().setExtendedTimeout();
+                    }
+                });
+    }
+
+    private void launchPictureLibrary() {
+        WPMediaUtils.launchPictureLibrary(this);
+        AppLockManager.getInstance().setExtendedTimeout();
+    }
+
+    private void launchVideoLibrary() {
+        WPMediaUtils.launchVideoLibrary(this);
+        AppLockManager.getInstance().setExtendedTimeout();
+    }
+
+    private void launchVideoCamera() {
+        WPMediaUtils.launchVideoCamera(this);
+        AppLockManager.getInstance().setExtendedTimeout();
+    }
+
+    /*
+     * resizes the photo picker based on device orientation - full height in landscape, half
+     * height in portrait
+     */
+    private void resizePhotoPicker() {
+        if (mPhotoPickerContainer == null) return;
+
+        if (DisplayUtils.isLandscape(this)) {
+            mPhotoPickerOrientation = Configuration.ORIENTATION_LANDSCAPE;
+            mPhotoPickerContainer.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
+        } else {
+            mPhotoPickerOrientation = Configuration.ORIENTATION_PORTRAIT;
+            int displayHeight = DisplayUtils.getDisplayPixelHeight(this);
+            int containerHeight = (int) (displayHeight * 0.5f);
+            mPhotoPickerContainer.getLayoutParams().height = containerHeight;
+        }
+
+        if (mPhotoPickerFragment != null) {
+            mPhotoPickerFragment.reload();
+        }
+    }
+
+    /*
+     * loads the photo picker fragment, which is hidden until the user taps the media icon
+     */
+    private void initPhotoPicker() {
+        mPhotoPickerContainer = findViewById(R.id.photo_fragment_container);
+
+        // size the picker before creating the fragment to avoid having it load media now
+        resizePhotoPicker();
+
+        EnumSet<PhotoPickerFragment.PhotoPickerOption> options =
+                EnumSet.of(PhotoPickerFragment.PhotoPickerOption.ALLOW_MULTI_SELECT);
+        mPhotoPickerFragment = PhotoPickerFragment.newInstance(this, options);
+
+        getFragmentManager()
+                .beginTransaction()
+                .add(R.id.photo_fragment_container, mPhotoPickerFragment, PHOTO_PICKER_TAG)
+                .commit();
+    }
+
+    /*
+     * user has requested to show the photo picker
+     */
+    private void showPhotoPicker() {
+        boolean isAlreadyShowing = isPhotoPickerShowing();
+
+        // make sure we initialized the photo picker
+        if (mPhotoPickerFragment == null) {
+            //SmartToast.reset();
+            initPhotoPicker();
+        }
+
+        // hide soft keyboard
+        View view = getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+
+        // slide in the photo picker
+        if (!isAlreadyShowing) {
+            AniUtils.animateBottomBar(mPhotoPickerContainer, true, AniUtils.Duration.MEDIUM);
+            mPhotoPickerFragment.refresh();
+            mPhotoPickerFragment.setPhotoPickerListener(this);
+        }
+
+        // animate in the editor overlay
+        showOverlay(true);
+
+        if (mEditorFragment instanceof AztecEditorFragment) {
+            ((AztecEditorFragment) mEditorFragment).enableMediaMode(true);
+        }
+
+        // let the user know about long-press to multiselect, but only if the user has already granted
+        // storage permission - otherwise the toast will appear above the "soft ask" view
+        if (!isAlreadyShowing && ContextCompat.checkSelfPermission(
+                this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+//            SmartToast.show(this, SmartToast.SmartToastType.MEDIA_LONG_PRESS);
+        }
+    }
+
+    private void hidePhotoPicker() {
+        if (isPhotoPickerShowing()) {
+            mPhotoPickerFragment.finishActionMode();
+            mPhotoPickerFragment.setPhotoPickerListener(null);
+            AniUtils.animateBottomBar(mPhotoPickerContainer, false);
+        }
+
+        hideOverlay();
+
+        if (mEditorFragment instanceof AztecEditorFragment) {
+            ((AztecEditorFragment) mEditorFragment).enableMediaMode(false);
+        }
+    }
+
+    /*
+     * shows/hides the overlay which appears atop the editor, which effectively disables it
+     */
+    private void showOverlay(boolean animate) {
+        View overlay = findViewById(R.id.view_overlay);
+        if (animate) {
+            AniUtils.fadeIn(overlay, AniUtils.Duration.MEDIUM);
+        } else {
+            overlay.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideOverlay() {
+        View overlay = findViewById(R.id.view_overlay);
+        overlay.setVisibility(View.GONE);
+    }
+
 }

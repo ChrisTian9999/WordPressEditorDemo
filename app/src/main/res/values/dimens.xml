@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="toolbar_subtitle_height">48dp</dimen>
+    <dimen name="toolbar_content_offset">72dp</dimen>
+
+    <dimen name="appbar_elevation">4dp</dimen>
+
+    <dimen name="fab_margin">@dimen/fab_margin_default</dimen>
+    <dimen name="fab_margin_default">16dp</dimen>
+
+    <dimen name="text_sz_extra_small">10sp</dimen>
+    <dimen name="text_sz_small">12sp</dimen>
+    <dimen name="text_sz_medium">14sp</dimen>
+    <dimen name="text_sz_large">16sp</dimen>
+    <dimen name="text_sz_extra_large">20sp</dimen>
+    <dimen name="text_sz_double_extra_large">24sp</dimen>
+    <dimen name="text_sz_triple_extra_large">26sp</dimen>
+
+    <!-- photo picker -->
+    <dimen name="photo_picker_item_padding">2dp</dimen>
+    <dimen name="photo_picker_selected_item_padding">4dp</dimen>
+    <dimen name="photo_picker_icon">48dp</dimen>
+    <dimen name="photo_picker_preview_icon">28dp</dimen>
+
+    <dimen name="margin_extra_large">16dp</dimen>
+    <dimen name="margin_extra_medium_large">24dp</dimen>
+    <dimen name="margin_extra_extra_medium_large">32dp</dimen>
+    <dimen name="margin_extra_extra_large">48dp</dimen>
+</resources>

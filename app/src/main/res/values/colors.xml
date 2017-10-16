@@ -1,4 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="color_control_activated">@color/wp_blue_light</color>
+
+    <!-- Translucent -->
+    <color name="black_translucent_40">#66000000</color>
+    <color name="black_translucent_50">#80000000</color>
+    <color name="blue_light_translucent_80">#cc78dcfa</color>
+    <color name="grey_dark_translucent_50">#802e4453</color>
+    <color name="grey_dark_translucent_70">#b32e4453</color>
+    <color name="grey_translucent_50">#80888888</color>
+    <color name="grey_lighten_10_translucent_50">#80a8bece</color>
+    <color name="grey_lighten_20_translucent_50">#80c8d7e1</color>
+    <color name="grey_lighten_30_translucent_50">#80e9eff3</color>
+    <color name="white_translucent_40">#66ffffff</color>
+    <color name="white_translucent_60">#99ffffff</color>
+    <color name="white_translucent_65">#a6ffffff</color>
+
+    <!-- Media Gallery -->
+    <color name="media_gallery_bg">@color/grey_darken_30</color>
+    <color name="media_gallery_option_selected">@color/grey_dark</color>
+    <color name="media_gallery_option_default">@color/grey_lighten_30</color>
+
+    <!-- Oranges -->
+    <color name="orange_jazzy">#f0821e</color>
+    <color name="orange_fire">#d54e21</color>
 </resources>

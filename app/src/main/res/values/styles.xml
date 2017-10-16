@@ -6,4 +6,8 @@
         <item name="colorControlActivated">@color/color_control_activated</item>
     </style>
 
+    <declare-styleable name="WPTextView">
+        <attr name="fixWidowWords" format="boolean" />
+    </declare-styleable>
+
 </resources>
