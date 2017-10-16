@@ -2,6 +2,7 @@ package com.chriszht.editordemo;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
@@ -10,9 +11,12 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.DragEvent;
@@ -21,8 +25,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 
+import com.chriszht.editordemo.media.MediaBrowserActivity;
 import com.chriszht.editordemo.photopicker.PhotoPickerFragment;
 import com.chriszht.editordemo.utils.AniUtils;
+import com.chriszht.editordemo.utils.RequestCodes;
 import com.chriszht.editordemo.utils.WPMediaUtils;
 
 import org.wordpress.android.editor.AztecEditorFragment;
@@ -32,13 +38,18 @@ import org.wordpress.android.editor.EditorFragmentAbstract.EditorFragmentListene
 import org.wordpress.android.editor.EditorFragmentAbstract.TrackableEvent;
 import org.wordpress.android.editor.EditorMediaUploadListener;
 import org.wordpress.android.editor.ImageSettingsDialogFragment;
+import org.wordpress.android.fluxc.model.MediaModel;
 import org.wordpress.android.util.AppLog;
 import org.wordpress.android.util.AppLog.T;
 import org.wordpress.android.util.DisplayUtils;
+import org.wordpress.android.util.ListUtils;
 import org.wordpress.android.util.MediaUtils;
+import org.wordpress.android.util.ToastUtils;
 import org.wordpress.android.util.helpers.MediaFile;
+import org.wordpress.android.util.helpers.MediaGallery;
 import org.wordpress.passcodelock.AppLockManager;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -182,40 +193,141 @@ public class EditorExampleActivity extends AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (data == null) {
+        if (resultCode != Activity.RESULT_OK) {
             return;
         }
 
-        Uri mediaUri = data.getData();
-
-        MediaFile mediaFile = new MediaFile();
-        String mediaId = String.valueOf(System.currentTimeMillis());
-        mediaFile.setMediaId(mediaId);
-        mediaFile.setVideo(mediaUri.toString().contains("video"));
-
-        switch (requestCode) {
-            case ADD_MEDIA_ACTIVITY_REQUEST_CODE:
-                mEditorFragment.appendMediaFile(mediaFile, mediaUri.toString(), null);
-
-                if (mEditorFragment instanceof EditorMediaUploadListener) {
-                    simulateFileUpload(mediaId, mediaUri.toString());
-                }
-                break;
-            case ADD_MEDIA_FAIL_ACTIVITY_REQUEST_CODE:
-                mEditorFragment.appendMediaFile(mediaFile, mediaUri.toString(), null);
-
-                if (mEditorFragment instanceof EditorMediaUploadListener) {
-                    simulateFileUploadFail(mediaId, mediaUri.toString());
-                }
-                break;
-            case ADD_MEDIA_SLOW_NETWORK_REQUEST_CODE:
-                mEditorFragment.appendMediaFile(mediaFile, mediaUri.toString(), null);
-
-                if (mEditorFragment instanceof EditorMediaUploadListener) {
-                    simulateSlowFileUpload(mediaId, mediaUri.toString());
-                }
-                break;
+        if (data != null || ((requestCode == RequestCodes.TAKE_PHOTO || requestCode == RequestCodes.TAKE_VIDEO))) {
+            switch (requestCode) {
+                case RequestCodes.MULTI_SELECT_MEDIA_PICKER:
+                    handleMediaPickerResult(data);
+                    break;
+                case RequestCodes.PICTURE_LIBRARY:
+                    final Uri imageUri = data.getData();
+                    if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+                        WPMediaUtils.advertiseImageOptimization(this,
+                                new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                                    @Override
+                                    public void done() {
+                                        addMedia(imageUri, false);
+                                    }
+                                });
+                    } else {
+                        addMedia(imageUri, false);
+                    }
+                    break;
+                case RequestCodes.TAKE_PHOTO:
+                    if (WPMediaUtils.shouldAdvertiseImageOptimization(this)) {
+                        WPMediaUtils.advertiseImageOptimization(this,
+                                new WPMediaUtils.OnAdvertiseImageOptimizationListener() {
+                                    @Override
+                                    public void done() {
+                                        addLastTakenPicture();
+                                    }
+                                });
+                    } else {
+                        addLastTakenPicture();
+                    }
+                    break;
+                case RequestCodes.VIDEO_LIBRARY:
+                    Uri videoUri = data.getData();
+                    addMedia(videoUri, false);
+                    break;
+                case RequestCodes.TAKE_VIDEO:
+                    Uri capturedVideoUri = MediaUtils.getLastRecordedVideoUri(this);
+                    if (addMedia(capturedVideoUri, true)) {
+//                        AnalyticsTracker.track(Stat.EDITOR_ADDED_VIDEO_NEW);
+                    } else {
+                        ToastUtils.showToast(this, R.string.gallery_error, ToastUtils.Duration.SHORT);
+                    }
+                    break;
+            }
         }
+    }
+
+    private void handleMediaPickerResult(Intent data) {
+        ArrayList<Long> ids = ListUtils.fromLongArray(data.getLongArrayExtra(MediaBrowserActivity.RESULT_IDS));
+        if (ids == null || ids.size() == 0) {
+            return;
+        }
+
+        // if only one item was chosen insert it as a media object, otherwise show the insert
+        // media dialog so the user can choose how to insert the items
+        if (ids.size() == 1) {
+            long mediaId = ids.get(0);
+            addExistingMediaToEditor(mediaId);
+        } else {
+            showInsertMediaDialog(ids);
+        }
+    }
+
+    private void addExistingMediaToEditor(long mediaId) {
+        MediaModel media = mMediaStore.getSiteMediaWithId(mSite, mediaId);
+        if (media != null) {
+            MediaFile mediaFile = FluxCUtils.mediaFileFromMediaModel(media);
+//            trackAddMediaFromWPLibraryEvents(mediaFile.isVideo(), media.getMediaId());
+            String urlToUse = TextUtils.isEmpty(media.getUrl()) ? media.getFilePath() : media.getUrl();
+            mEditorFragment.appendMediaFile(mediaFile, urlToUse, mImageLoader);
+            savePostAsync(null);
+        }
+    }
+
+    /*
+     * called after user selects multiple photos from WP media library
+     */
+    private void showInsertMediaDialog(final ArrayList<Long> mediaIds) {
+        InsertMediaCallback callback = new InsertMediaCallback() {
+            @Override
+            public void onCompleted(@NonNull InsertMediaDialog dialog) {
+                switch (dialog.getInsertType()) {
+                    case GALLERY:
+                        MediaGallery gallery = new MediaGallery();
+                        gallery.setType(dialog.getGalleryType().toString());
+                        gallery.setNumColumns(dialog.getNumColumns());
+                        gallery.setIds(mediaIds);
+                        mEditorFragment.appendGallery(gallery);
+                        break;
+                    case INDIVIDUALLY:
+                        for (Long id: mediaIds) {
+                            addExistingMediaToEditor(id);
+                        }
+                        break;
+                }
+            }
+        };
+        InsertMediaDialog dialog = InsertMediaDialog.newInstance(callback, mSite);
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.add(dialog, "insert_media");
+        ft.commitAllowingStateLoss();
+    }
+
+    private void addLastTakenPicture() {
+        try {
+            WPMediaUtils.scanMediaFile(this, mMediaCapturePath);
+            File f = new File(mMediaCapturePath);
+            Uri capturedImageUri = Uri.fromFile(f);
+            if (addMedia(capturedImageUri, true)) {
+                this.sendBroadcast(new Intent(Intent.ACTION_MEDIA_MOUNTED, Uri.parse("file://"
+                        + Environment.getExternalStorageDirectory())));
+            } else {
+                ToastUtils.showToast(this, R.string.gallery_error, ToastUtils.Duration.SHORT);
+            }
+        } catch (RuntimeException e) {
+            AppLog.e(T.POSTS, e);
+        } catch (OutOfMemoryError e) {
+            AppLog.e(T.POSTS, e);
+        }
+    }
+
+    private boolean addMedia(Uri mediaUri, boolean isNew) {
+        if (mediaUri == null) {
+            return false;
+        }
+
+        List<Uri> uriList = new ArrayList<>();
+        uriList.add(mediaUri);
+        addMediaList(uriList, isNew);
+        return true;
     }
 
     @Override

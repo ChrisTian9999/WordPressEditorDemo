@@ -33,4 +33,8 @@ dependencies {
 
     releaseCompile project(path:':libs:editor:WordPressEditor', configuration: 'release')
     debugCompile project(path:':libs:editor:WordPressEditor', configuration: 'debug')
+
+    compile ('com.github.wordpress-mobile.WordPress-FluxC-Android:fluxc:77e383f3e65ce1cee3f9ebad2eac522f29b4e3b8') {
+        exclude group: "com.android.volley";
+    }
 }

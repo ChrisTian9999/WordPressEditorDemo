@@ -1,4 +1,6 @@
-<resources>
+<resources
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -10,4 +12,41 @@
         <attr name="fixWidowWords" format="boolean" />
     </declare-styleable>
 
+    <style name="WordPress" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Material theme -->
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorPrimaryDark">@color/color_primary_dark</item>
+        <item name="colorAccent">@color/color_accent</item>
+        <item name="colorControlActivated">@color/color_control_activated</item>
+        <item name="colorControlHighlight">@color/color_control_highlight</item>
+
+        <item name="android:windowBackground">@color/grey_lighten_30</item>
+        <item name="android:actionBarItemBackground">@drawable/selectable_background_wordpress</item>
+
+        <item name="colorButtonNormal">@color/light_gray</item>
+    </style>
+
+    <style name="WordPress.EmptyList">
+        <item name="android:textColor">@color/grey_darken_30</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginLeft">16dp</item>
+        <item name="android:layout_marginRight">16dp</item>
+    </style>
+
+    <style name="WordPress.EmptyList.Title" parent="WordPress.EmptyList">
+        <item name="android:textSize">@dimen/empty_list_title_text_size</item>
+        <item name="android:fontFamily" tools:ignore="NewApi">sans-serif-light</item>
+    </style>
+
+    <style name="WordPress.EmptyList.Description" parent="WordPress.EmptyList">
+        <item name="android:textSize">@dimen/empty_list_description_text_size</item>
+    </style>
+
+    <!--
+       WPNetworkImageView
+   -->
+    <declare-styleable name="wpNetworkImageView">
+        <attr name="wpDefaultImageDrawable" format="reference"/>
+        <attr name="wpErrorImageDrawable" format="reference"/>
+    </declare-styleable>
 </resources>

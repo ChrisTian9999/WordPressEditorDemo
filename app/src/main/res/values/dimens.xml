@@ -27,4 +27,22 @@
     <dimen name="margin_extra_medium_large">24dp</dimen>
     <dimen name="margin_extra_extra_medium_large">32dp</dimen>
     <dimen name="margin_extra_extra_large">48dp</dimen>
+
+    <dimen name="tabs_elevation">4dp</dimen>
+
+    <dimen name="empty_list_title_text_size">24sp</dimen>
+    <dimen name="empty_list_description_text_size">18sp</dimen>
+    <dimen name="empty_list_title_side_margin">32dp</dimen>
+    <dimen name="empty_list_title_bottom_margin">8dp</dimen>
+    <dimen name="empty_list_description_bottom_margin">8dp</dimen>
+    <dimen name="empty_list_description_side_margin">48dp</dimen>
+
+    <dimen name="media_grid_progress_height">24dp</dimen>
+
+    <!-- left/right margin for content such as Me fragment, My Site fragment -->
+    <dimen name="content_margin_normal">@dimen/margin_medium</dimen>
+    <dimen name="content_margin_normal_landscape">48dp</dimen>
+    <dimen name="content_margin_tablet">48dp</dimen>
+    <dimen name="content_margin_tablet_big">96dp</dimen>
+    <dimen name="content_margin">@dimen/content_margin_normal</dimen>
 </resources>
